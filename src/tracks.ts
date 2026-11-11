@@ -114,7 +114,7 @@ export function tableHtml(matches: Match[], colours: Map<string, string>) {
   const sorted = [...matches].sort((a, b) =>
     compareDatabases(a.database, b.database) || a.source.localeCompare(b.source) || span(a)[0] - span(b)[0]);
   return `<div class="table-wrap"><table>
-    <thead><tr><th>Database</th><th>Source</th><th>Signature</th><th>InterPro entry</th><th>Positions</th></tr></thead>
+    <thead><tr><th>Database</th><th>Source</th><th>Signature</th><th>InterPro entry</th><th>Positions</th><th class="structure-col"></th></tr></thead>
     <tbody>${sorted.map((m) => `<tr>
       <td class="nowrap">${swatch(colours.get(m.database)!, isPrediction(m))} ${esc(m.database)} <span class="muted">${esc(m.database_version)}</span></td>
       <td class="nowrap">${esc(m.source)}</td>
@@ -125,6 +125,8 @@ export function tableHtml(matches: Match[], colours: Map<string, string>) {
            <div class="sub">${esc(m.entry_description || m.entry_name || "")}</div>`
         : `<span class="muted">—</span>`}</td>
       <td class="num">${positions(m)}</td>
+      <td class="structure-col"><button type="button" class="highlight" data-highlight="${matches.indexOf(m)}"
+        aria-pressed="false" title="Highlight this match on the structure">Highlight</button></td>
     </tr>`).join("")}</tbody>
   </table></div>
   <p class="note">${fmt(matches.length)} match${matches.length === 1 ? "" : "es"}. InterPro-N matches are not integrated in InterPro entries.</p>`;

@@ -5,6 +5,7 @@ A static site to look up UniParc sequences and their InterPro matches.
 - **Calendar** of the sequences added to UniParc per day, since 2015. Selecting a day opens the
   first sequence added on that day.
 - **Search** by UPI, UniProtKB accession (isoforms included), MD5 or sequence.
+- **Structures**: the experimental structures and models with exactly the same sequence.
 - **Sequence neighbourhood**: every single-residue substitution of a sequence (19 × its length)
   is looked up in UniParc. The variants found are shown on a residue × position map. 
   Sequences longer than 2,000 residues are not scanned.

@@ -4,7 +4,8 @@ import { config } from "./config.ts";
 import summaryJson from "./data/summary.json";
 import type { Summary } from "./summary.ts";
 import { databaseColours } from "./palette.ts";
-import { legendHtml, skeletonHtml, tableHtml, tooltipHtml, tracksHtml } from "./tracks.ts";
+import { legendHtml, positions, skeletonHtml, tableHtml, tooltipHtml, tracksHtml } from "./tracks.ts";
+import { closeStructure, findStructures, highlight, resetColours, showStructure, structuresHtml, viewable } from "./structures.ts";
 import { accessionQuery, classify, lookup, md5 } from "./uniparc.ts";
 import type { Sequence } from "./uniparc.ts";
 import { esc, fmt, hideTooltip, longDate, parseDay, shortDate, showTooltip } from "./util.ts";
@@ -94,6 +95,8 @@ function sequenceSkeleton(what: string) {
 function renderSequence(entry: Sequence, day: string | "before" | null) {
   const added = day === "before" ? `before ${shortDate(calendar.first)}`
     : day ? `<a href="#" id="added-day">${longDate(parseDay(day))}</a>` : "after this release";
+  closeStructure();
+  result.classList.remove("has-structure");
   result.innerHTML =
     panel(entry.upi, `
       <dl class="facts">
@@ -107,7 +110,8 @@ function renderSequence(entry: Sequence, day: string | "before" | null) {
         <button type="button" id="fasta">Download FASTA</button>
       </div>
       <pre class="seq">${sequenceHtml(entry.sequence)}</pre>`,
-      `<a class="ext" href="https://www.uniprot.org/uniparc/${entry.upi}/entry" target="_blank" rel="noopener">UniParc entry ↗</a>`, "id") +
+      `<a class="ext" href="https://www.uniprot.org/uniparc/${entry.upi}/entry" target="_blank" rel="noopener">UniParc entry</a>`, "id") +
+    panel("Structures", `<div id="structures"><div class="status">Looking up structures in 3D-Beacons…</div></div>`) +
     panel("InterPro matches", `<div id="matches"></div>`, legendHtml()) +
     `<section class="panel" id="neighbourhood"></section>`;
 
@@ -161,6 +165,75 @@ async function renderMatches(entry: Sequence, signal: AbortSignal) {
     if (id !== null && id !== undefined) showTooltip(tooltipHtml(matches[+id]), e.target as Element);
   });
   box.addEventListener("mouseout", hideTooltip);
+  box.addEventListener("click", (e) => {
+    const button = (e.target as Element).closest?.("button[data-highlight]") as HTMLButtonElement | null;
+    if (!button) return;
+    if (button.getAttribute("aria-pressed") === "true") {
+      resetStructureColours();
+      return;
+    }
+    const m = matches[+button.dataset.highlight!];
+    const ranges = m.locations.flatMap((l): [number, number][] =>
+      (l.fragments?.length ? l.fragments : [l]).map((f) => [f.start, f.end]));
+    const colour = colours.get(m.database)!;
+    highlight(ranges, colour, `${esc(m.signature_accession)} (${positions(m)})`);
+    unpressHighlights();
+    button.setAttribute("aria-pressed", "true");
+    document.getElementById("structures")?.closest(".panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
+// ------------------------------------------------------------------ structures
+const unpressHighlights = () =>
+  result.querySelectorAll("button[data-highlight][aria-pressed=true]").forEach((b) => b.setAttribute("aria-pressed", "false"));
+
+function resetStructureColours() {
+  resetColours();
+  unpressHighlights();
+}
+
+async function renderStructures(entry: Sequence, signal: AbortSignal) {
+  const box = document.getElementById("structures")!;
+  let structures;
+  try {
+    structures = await findStructures(entry.md5, signal);
+  } catch (e) {
+    if (!signal.aborted) box.innerHTML = `<div class="message error">Could not look up the structures: ${esc((e as Error).message)}</div>`;
+    return;
+  }
+  if (signal.aborted) return;
+  if (!structures.length) {
+    box.innerHTML = `<p class="muted">No structures or models for this sequence.</p>`;
+    return;
+  }
+  box.innerHTML = structuresHtml(structures);
+  const viewerEl = document.getElementById("structure-viewer")!;
+  const status = document.getElementById("structure-status")!;
+
+  const show = async (i: number) => {
+    const s = structures[i];
+    box.querySelectorAll("tr.selected").forEach((r) => r.classList.remove("selected"));
+    box.querySelector(`tr[data-s="${i}"]`)?.classList.add("selected");
+    status.textContent = `Loading ${s.model_identifier}…`;
+    try {
+      await showStructure(viewerEl, s, signal);
+    } catch (e) {
+      if (!signal.aborted) status.textContent = `Could not load ${s.model_identifier}: ${(e as Error).message}`;
+      return;
+    }
+    if (signal.aborted) return;
+    status.textContent = s.model_identifier;      // the colours (pLDDT or a match) are kept
+    result.classList.add("has-structure");     // shows the Highlight buttons of the matches
+  };
+  box.addEventListener("click", (e) => {
+    const target = e.target as Element;
+    if (target.id === "structure-reset") { resetStructureColours(); return; }
+    const button = target.closest?.("button[data-s]") as HTMLButtonElement | null;
+    if (button) show(+button.dataset.s!);
+  });
+  const first = structures.findIndex(viewable);
+  if (first >= 0) show(first);
+  else viewerEl.hidden = true;
 }
 
 // ------------------------------------------------------------------ neighbourhood
@@ -308,6 +381,7 @@ async function search(raw: string) {
     document.getElementById(pendingScroll)!.scrollIntoView({ block: "start" });
     pendingScroll = null;
   }
+  renderStructures(entry, signal);
   if (day === null) {
     document.getElementById("matches")!.innerHTML = `<p class="muted">This sequence was added to UniParc after UniProt release ${config.uniprotRelease} and is not in the dataset.</p>`;
     return;

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>UniParc Explorer</title>
+  <meta name="description" content="Search UniParc protein sequences and their InterPro annotations.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='3' width='9' height='3' rx='1' fill='%232c7fb8'/%3E%3Crect x='5' y='8' width='10' height='3' rx='1' fill='%2341b6c4'/%3E%3C/svg%3E">
+  <script type="module" src="/src/main.ts"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="./">UniParc Explorer</a>
+      <span class="release" id="release"></span>
+      <span class="stats" id="stats"></span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="intro">
+      <h1>Protein sequences and their InterPro annotations</h1>
+      <p>Look up any sequence of the UniProt Archive (<a href="https://www.uniprot.org/help/uniparc">UniParc</a>)
+        and its <a href="https://www.ebi.ac.uk/interpro/">InterPro</a> annotations, member database matches and
+        InterPro-N predictions, both reported by <a href="https://github.com/ebi-pf-team/interproscan6">InterProScan 6</a>,
+        then explore its neighbourhood: the variants, one substitution away, that are UniParc sequences too.</p>
+      <form id="search-form" class="search" role="search">
+        <label for="q">UniParc identifier, UniProtKB accession, MD5 checksum, or protein sequence</label>
+        <textarea id="q" rows="5" spellcheck="false" autocomplete="off"
+          placeholder="UPI0000000001, P04637, EF8A186543FE2E2243B5F2C571E8CE69, or a sequence"></textarea>
+        <div class="actions">
+          <button type="submit" class="primary">Search</button>
+          <button type="button" id="random">Random sequence</button>
+          <span class="examples">Examples:
+            <a href="#UPI000002ED67" data-example="UPI000002ED67">human p53</a>,
+            <a href="#UPI00131F240A" data-example="UPI00131F240A">SARS-CoV-2 spike</a>,
+            <a href="#UPI000032C2FB" data-example="UPI000032C2FB">UPI000032C2FB</a>,
+            <a href="#P05067" data-example="P05067">P05067</a></span>
+        </div>
+      </form>
+    </section>
+
+    <div id="result" aria-live="polite" hidden></div>
+
+    <section class="panel" id="overview">
+      <header class="panel-head"><h2>Sequences added to UniParc per day</h2></header>
+      <div class="panel-body">
+        <p class="lead" id="calendar-note"></p>
+        <div class="cal-legend" id="calendar-legend"></div>
+        <div class="calendar" id="calendar"></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+</body>
+</html>

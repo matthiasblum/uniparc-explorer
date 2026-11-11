@@ -1,0 +1,25 @@
+{
+  "name": "uniparc-explorer",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "hyparquet": "^1.31.2",
+    "hyparquet-compressors": "^1.1.2",
+    "spark-md5": "^3.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@types/spark-md5": "^3.0.5",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.3"
+  }
+}
